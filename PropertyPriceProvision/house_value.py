@@ -21,11 +21,17 @@ def one_hot_encoding(data):
 
     return onehot_encoded
 
-def gradient_descent(start, learn_rate, features, n_iter):
-    vector = start
-    
-
-    return vector
+def gradient_descent_LMS(start, learn_rate, features, y, n_iters):
+    input = start
+    wT = np.ones(len(features)) #initialize weight vector
+    for i in range(0, n_iters):
+        row = [z[i] for z in features]
+        wTx = np.dot(wT, row)
+        loss = wTx - y[i]
+        J = np.sum(loss * input)
+        print ("iter " + str(i) + " | " + "J: " + str(J)) 
+        wT = wT - (learn_rate * J)
+    return wT
 
 ##############################
 #        Main Program
@@ -119,4 +125,7 @@ plt.show()
 
 # Implementation of LMS algorithm
 # Because of the small number of data, we will use batch gradient decent algotithm to find the least cost
-
+features = [longitude, latitude, housing_median_age, total_rooms, total_bedrooms, population, 
+households, median_income, ocean_proximity]
+Z = gradient_descent_LMS(0.8, 0.01, features, median_house_value, len(longitude))
+    
