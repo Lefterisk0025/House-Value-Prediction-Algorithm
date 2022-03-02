@@ -21,16 +21,16 @@ def one_hot_encoding(data):
 
     return onehot_encoded
 
-def gradient_descent_LMS(start, learn_rate, features, y, n_iters):
-    input = start
-    wT = np.ones(len(features)) #initialize weight vector
+def gradient_descent_LMS(learn_rate, features, y, n_iters):
+    wT = np.ones(9) #initialize weight vector
+    features_transpose = features.transpose()
     for i in range(0, n_iters):
-        row = [z[i] for z in features]
-        wTx = np.dot(wT, row)
+        wTx = np.dot(features, wT)
         loss = wTx - y[i]
-        J = np.sum(loss * input)
-        print ("iter " + str(i) + " | " + "J: " + str(J)) 
-        wT = wT - (learn_rate * J)
+        J = np.sum(loss ** 2) / 2
+        print ("iter " + str(i) + "    |    " + "J: " + str(J)) 
+        gradient = np.dot(features_transpose, loss)
+        wT = wT - learn_rate * gradient
     return wT
 
 ##############################
@@ -38,7 +38,7 @@ def gradient_descent_LMS(start, learn_rate, features, y, n_iters):
 ##############################
 
 # Read CSV file
-data = read_csv("housing.csv")
+data = read_csv("housing2.csv")
 
 # Create a subset for each feature (column)
 longitude = np.array(data['longitude'].tolist())
@@ -66,6 +66,7 @@ median_house_value = scaler.fit_transform(median_house_value.reshape(-1, 1))
 
 # Scale categorical data
 ocean_proximity = one_hot_encoding(ocean_proximity)
+ocean_proximity = np.array(ocean_proximity)
 
 # Fill missing data with the median value of each feature
 imp = SimpleImputer(strategy='mean')
@@ -120,12 +121,22 @@ axs2[2].plot(median_income, color='tab:brown', label='Median Income')
 axs2[2].plot(total_bedrooms, color='tab:purple', label='Total Bedrooms')
 axs2[2].plot(population, color='tab:cyan', label='Population')
 axs2[2].legend(loc='upper left')
-
 plt.show()
+
+longitude = np.concatenate(longitude, axis=0)
+latitude = np.concatenate(latitude, axis=0)
+housing_median_age = np.concatenate(housing_median_age, axis=0)
+total_rooms = np.concatenate(total_rooms, axis=0)
+total_bedrooms = np.concatenate(total_bedrooms, axis=0)
+population = np.concatenate(population, axis=0)
+households = np.concatenate(households, axis=0)
+median_income = np.concatenate(median_income, axis=0)
 
 # Implementation of LMS algorithm
 # Because of the small number of data, we will use batch gradient decent algotithm to find the least cost
-features = [longitude, latitude, housing_median_age, total_rooms, total_bedrooms, population, 
-households, median_income, ocean_proximity]
-Z = gradient_descent_LMS(0.8, 0.01, features, median_house_value, len(longitude))
-    
+features = np.stack((longitude, latitude, housing_median_age, total_rooms, total_bedrooms, population, 
+households, median_income), axis=1)
+m, n = np.shape(features)
+features = np.c_[np.ones(m), features]
+Z = gradient_descent_LMS(0.01, features, median_house_value, len(longitude))
+print(Z)
