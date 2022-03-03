@@ -38,7 +38,7 @@ def gradient_descent_LMS(learn_rate, features, y, n_iters):
 ##############################
 
 # Read CSV file
-data = read_csv("housing2.csv")
+data = read_csv("housing.csv")
 
 # Create a subset for each feature (column)
 longitude = np.array(data['longitude'].tolist())
@@ -138,5 +138,6 @@ features = np.stack((longitude, latitude, housing_median_age, total_rooms, total
 households, median_income), axis=1)
 m, n = np.shape(features)
 features = np.c_[np.ones(m), features]
-Z = gradient_descent_LMS(0.01, features, median_house_value, len(longitude))
+print(features[0][1])
+Z = gradient_descent_LMS(0.01, features, median_house_value, 20)
 print(Z)
