@@ -1,10 +1,16 @@
-from cProfile import label
+import matplotlib.pyplot as plt
+import random
 import numpy as np
+from cProfile import label
 from pandas import *
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from sklearn.preprocessing import OneHotEncoder
-import matplotlib.pyplot as plt
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import KFold
+from sklearn.linear_model import LinearRegression
+from scipy import stats
+from datetime import datetime
 
 ##############################
 #        Methods
@@ -22,16 +28,23 @@ def one_hot_encoding(data):
     return onehot_encoded
 
 def gradient_descent_LMS(learn_rate, features, y, n_iters):
-    wT = np.ones(9) #initialize weight vector
+    wT = np.ones(features.shape[1]) #initialize weight vector
     features_transpose = features.transpose()
-    for i in range(0, n_iters):
-        wTx = np.dot(features, wT)
-        loss = wTx - y[i]
-        J = np.sum(loss ** 2) / 2
-        print ("iter " + str(i) + "    |    " + "J: " + str(J)) 
-        gradient = np.dot(features_transpose, loss)
-        wT = wT - learn_rate * gradient
+    for iter in range(0, n_iters):
+       hypothesis = np.dot(features, wT)
+       loss = hypothesis - y
+       J = np.sum(loss ** 2) / 2  # cost
+       #print ("iter %s | J: %.3f" % (iter, J))    
+       gradient = np.dot(features_transpose, loss)      
+       wT = wT - learn_rate * gradient  # update
     return wT
+
+def get_data_index(data, indeces):
+    new_list = []
+    for i in indeces:
+        new_list.append(data[i])
+    return new_list
+
 
 ##############################
 #        Main Program
@@ -123,21 +136,49 @@ axs2[2].plot(population, color='tab:cyan', label='Population')
 axs2[2].legend(loc='upper left')
 plt.show()
 
-longitude = np.concatenate(longitude, axis=0)
-latitude = np.concatenate(latitude, axis=0)
-housing_median_age = np.concatenate(housing_median_age, axis=0)
-total_rooms = np.concatenate(total_rooms, axis=0)
-total_bedrooms = np.concatenate(total_bedrooms, axis=0)
-population = np.concatenate(population, axis=0)
-households = np.concatenate(households, axis=0)
-median_income = np.concatenate(median_income, axis=0)
+#-----------------------DATA TRAINNING-----------------------
+# Get trainning data
+random.seed(str(datetime.now()))
+num_of_train_indices = 100
+train_indices = random.sample(range(2, len(longitude)), num_of_train_indices) # Generate random indices
+train_indices = list(dict.fromkeys(train_indices)) # Remove doubles indices
 
-# Implementation of LMS algorithm
-# Because of the small number of data, we will use batch gradient decent algotithm to find the least cost
-features = np.stack((longitude, latitude, housing_median_age, total_rooms, total_bedrooms, population, 
-households, median_income), axis=1)
-m, n = np.shape(features)
-features = np.c_[np.ones(m), features]
-print(features[0][1])
-Z = gradient_descent_LMS(0.01, features, median_house_value, 20)
-print(Z)
+train_longitude = np.array(get_data_index(longitude, train_indices))
+train_latitude =  np.array(get_data_index(latitude, train_indices))
+train_housing_median_age =  np.array(get_data_index(housing_median_age, train_indices))
+train_total_rooms =  np.array(get_data_index(total_rooms, train_indices))
+train_total_bedrooms =  np.array(get_data_index(total_bedrooms, train_indices))
+train_population =  np.array(get_data_index(population, train_indices))
+train_households =  np.array(get_data_index(households, train_indices))
+train_median_income =  np.array(get_data_index(median_income, train_indices))
+train_median_house_value =  np.array(get_data_index(median_house_value, train_indices))
+
+train_longitude = np.concatenate(train_longitude, axis=0)
+train_latitude = np.concatenate(train_latitude, axis=0)
+train_housing_median_age = np.concatenate(train_housing_median_age, axis=0)
+train_total_rooms = np.concatenate(train_total_rooms, axis=0)
+train_total_bedrooms = np.concatenate(train_total_bedrooms, axis=0)
+train_population = np.concatenate(train_population, axis=0)
+train_households = np.concatenate(train_households, axis=0)
+train_median_income = np.concatenate(train_median_income, axis=0)
+train_median_house_value = np.concatenate(train_median_house_value, axis=0)
+
+train_features = np.stack((train_longitude, train_latitude, train_housing_median_age, train_total_rooms, 
+train_total_bedrooms, train_population, train_households, train_median_income), axis=1)
+# LMS algorithm
+m, n = np.shape(train_features)
+train_features = np.c_[ np.ones(m), train_features] # insert dummy column
+
+W1 = gradient_descent_LMS(0.01, train_features, train_median_house_value, 1000)
+print(W1)
+
+#-----------------------DATA TESTING-----------------------
+num_of_test_indices = 10
+test_indices = random.sample(range(2, len(longitude)), num_of_test_indices) # Generate random indices
+test_indices = list(dict.fromkeys(test_indices)) # Remove doubles indices
+for y in range(0, num_of_test_indices):
+    i = test_indices[y]
+    median_house_value_predict = W1[0] + W1[1]*longitude[i] + W1[2]*latitude[i] + W1[3]*housing_median_age[i] + W1[4]*total_rooms[i]
+    + W1[5]*total_bedrooms[i] + W1[6]*population[i] + W1[7]*households[i] + W1[8]*median_income[i]
+    print ("Predict Value %F | Real Value: %F" % (median_house_value_predict, median_house_value[i]))   
+    print(i)
